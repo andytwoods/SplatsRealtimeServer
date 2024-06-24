@@ -7,6 +7,9 @@ from broker import Broker
 # https://quart.palletsprojects.com/en/latest/tutorials/chat_tutorial.html#chat-tutorial
 broker = Broker()
 app = Quart(__name__)
+app.debug = True
+
+# quart --app app --debug run
 
 
 @app.route("/")
@@ -16,7 +19,6 @@ async def home():
 async def _receive() -> None:
     while True:
         message = await websocket.receive()
-        print(222, message, type(message))
         await broker.publish(message)
 
 @app.websocket("/ws")
