@@ -1,0 +1,35 @@
+import asyncio
+
+from quart import Quart, render_template, websocket
+
+from broker import Broker
+
+# https://quart.palletsprojects.com/en/latest/tutorials/chat_tutorial.html#chat-tutorial
+broker = Broker()
+app = Quart(__name__)
+
+
+@app.route("/")
+async def home():
+    return await render_template("index.html")
+
+async def _receive() -> None:
+    while True:
+        message = await websocket.receive()
+        print(222, message, type(message))
+        await broker.publish(message)
+
+@app.websocket("/ws")
+async def ws() -> None:
+    try:
+        task = asyncio.ensure_future(_receive())
+        async for message in broker.subscribe():
+            await websocket.send(message)
+    finally:
+        task.cancel()
+        await task
+
+if __name__ == '__main__':
+    app.run()
+
+

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block css %}
+    <style>
+        .ball {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            margin: 50px auto 0;
+            border-radius: 50%;
+            background-color: rgb(49, 145, 231);
+            box-shadow: inset -25px -15px 40px rgba(0, 0, 0, .3);
+            background: radial-gradient(circle at 65% 15%, white 1px, aqua 3%, darkblue 60%, aqua 100%);
+        }
+    </style>
+{% endblock css %}
+{% block content %}
+    <script type="text/javascript">
+
+        function makeid(length) {
+            let result = '';
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            const charactersLength = characters.length;
+            let counter = 0;
+            while (counter < length) {
+                result += characters.charAt(Math.floor(Math.random() * charactersLength));
+                counter += 1;
+            }
+            return result;
+        }
+
+        let ws;
+        let id = makeid(4);
+
+        const balls = (function () {
+
+            let api = {}
+            let all_balls = {};
+
+            function gen_ball(id) {
+                let div = document.createElement("div");
+                div.id = id;
+                div.className = "ball"
+                document.body.appendChild(div);
+            }
+
+            api.move = function (ball_info, this_id) {
+                if(ball_info.id === undefined) gen_ball(ball_info.id);
+                if (this_id || (!this_id && all_balls[ball_info.id] !== id)) {
+                    all_balls[ball_info.id] = {data: ball_info.data}
+                   gsap.to(document.getElementById('#' + ball_info.id), {
+                       _x: ball_info.x,
+                       _y: ball_info.y,
+                       _width:ball_info.z+5,
+                       _height: ball_info.z+5
+                   })
+                }
+            }
+
+            return api
+        }());
+        let linking = true;
+
+        function link_ws() {
+            console.log('linking...')
+            const _ws = new WebSocket(`wss://${location.host}/ws`);
+
+            _ws.addEventListener('message', function (event) {
+
+                const ball_info = JSON.parse(event.data);
+                if(ball_info.id===id) return;
+                balls.move(ball_info);
+                // const li = document.createElement("li");
+                //li.appendChild(document.createTextNode(event.data));
+                //document.getElementById("messages").appendChild(li);
+            });
+
+            function reconnect() {
+                if(linking) return;
+                else linking = true;
+                _ws.close();
+                ws = undefined;
+                console.log('lost connection, relinking shortly...')
+                setTimeout(function () {
+                    link_ws();
+                }, 1000);
+
+            }
+
+            _ws.addEventListener('close', reconnect);
+            _ws.addEventListener('error', reconnect);
+            _ws.addEventListener('open', function () {
+                console.log('connected');
+                linking = false;
+                ws = _ws;
+            });
+
+            function send(event) {
+                const message = (new FormData(event.target)).get("message");
+                if (message) {
+                    ws.send(message);
+                }
+                event.target.reset();
+                return false;
+            }
+        }
+
+        link_ws();
+
+        const acl = new Accelerometer({frequency: 1});
+        acl.addEventListener("reading", () => {
+            var ball_data = {id: id, sensor: 'gyroscope', data: {x: acl.x, y: acl.y, z: acl.z}}
+            var info_str = JSON.stringify(ball_data);
+            balls.move(ball_data, true);
+            if (!!ws) ws.send(info_str);
+        });
+
+        acl.start();
+    </script>
+    <div style="display: flex; height: 100%; flex-direction: column">
+        <ul id="messages" style="flex-grow: 1; list-style-type: none"></ul>
+    </div>
+{% endblock %}
