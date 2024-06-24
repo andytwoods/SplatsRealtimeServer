@@ -3,14 +3,18 @@
 {% block css %}
     <style>
         .ball {
-            position: absolute;
+            position: fixed;
             width: 50px;
             height: 50px;
             margin: 50px auto 0;
             border-radius: 50%;
+            top: 50%;
+            left: 50%;
             background-color: rgb(49, 145, 231);
             box-shadow: inset -25px -15px 40px rgba(0, 0, 0, .3);
             background: radial-gradient(circle at 65% 15%, white 1px, aqua 3%, darkblue 60%, aqua 100%);
+        }
+
         }
     </style>
 {% endblock css %}
@@ -45,16 +49,29 @@
             }
 
             api.move = function (ball_info, this_id) {
-                if(ball_info.id === undefined) gen_ball(ball_info.id);
-                if (this_id || (!this_id && all_balls[ball_info.id] !== id)) {
-                    all_balls[ball_info.id] = {data: ball_info.data}
-                   gsap.to(document.getElementById('#' + ball_info.id), {
-                       _x: ball_info.x,
-                       _y: ball_info.y,
-                       _width:ball_info.z+5,
-                       _height: ball_info.z+5
-                   })
+                const ball_id = ball_info['id'];
+                if (all_balls[ball_id] === undefined) {
+                    console.log(ball_id)
+                    gen_ball(ball_id);
+                    all_balls[ball_id] = {data: {}}
                 }
+                all_balls[ball_id] = {data: ball_info.data}
+
+                if (this_id || all_balls[ball_id] !== id)
+
+                    if (this_id || (!this_id && all_balls[ball_id] !== id)) {
+                        const ball = document.getElementById(ball_id);
+                        const left = 50 + ball_info.data.x*50 + "%";
+                        const top = 50 - ball_info.data.y *50 + "%";
+                        console.log(left, top, ball_info);
+
+                        gsap.to(ball, {
+                            left: left,
+                            top: top,
+                            width: ball_info.data.z *5 + 50,
+                            height: ball_info.data.z*5  + 50
+                        })
+                    }
             }
 
             return api
@@ -68,7 +85,7 @@
             _ws.addEventListener('message', function (event) {
 
                 const ball_info = JSON.parse(event.data);
-                if(ball_info.id===id) return;
+                if (ball_info.id === id) return;
                 balls.move(ball_info);
                 // const li = document.createElement("li");
                 //li.appendChild(document.createTextNode(event.data));
@@ -76,7 +93,7 @@
             });
 
             function reconnect() {
-                if(linking) return;
+                if (linking) return;
                 else linking = true;
                 _ws.close();
                 ws = undefined;
