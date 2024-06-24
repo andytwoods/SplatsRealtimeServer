@@ -2,6 +2,23 @@
 
 {% block css %}
     <style>
+
+        @media screen and (orientation: landscape) {
+            html {
+                /* Rotate the content container */
+                transform: rotate(-90deg);
+                transform-origin: left top;
+                /* Set content width to viewport height */
+                width: 100vh;
+                /* Set content height to viewport width */
+                height: 100vw;
+                overflow-x: hidden;
+                position: absolute;
+                top: 100%;
+                left: 0;
+            }
+        }
+
         .ball {
             position: fixed;
             width: 50px;
@@ -13,13 +30,45 @@
             background-color: rgb(49, 145, 231);
             box-shadow: inset -25px -15px 40px rgba(0, 0, 0, .3);
             background: radial-gradient(circle at 65% 15%, white 1px, aqua 3%, darkblue 60%, aqua 100%);
-        }
 
         }
     </style>
 {% endblock css %}
 {% block content %}
     <script type="text/javascript">
+
+
+        // https://stackoverflow.com/a/36712522/960471
+        function newGradient() {
+
+            function shuffle(array) {
+                let currentIndex = array.length;
+
+                // While there remain elements to shuffle...
+                while (currentIndex != 0) {
+
+                    // Pick a remaining element...
+                    let randomIndex = Math.floor(Math.random() * currentIndex);
+                    currentIndex--;
+
+                    // And swap it with the current element.
+                    [array[currentIndex], array[randomIndex]] = [
+                        array[randomIndex], array[currentIndex]];
+                }
+            }
+            var cols = "AliceBlue,AntiqueWhite,Aqua,Aquamarine,Azure,Beige,Bisque,Black,BlanchedAlmond,Blue,BlueViolet,Brown,BurlyWood,CadetBlue,Chartreuse,Chocolate,Coral,CornflowerBlue,Cornsilk,Crimson,Cyan,DarkBlue,DarkCyan,DarkGoldenrod,DarkGray,DarkGreen,DarkKhaki,DarkMagenta,DarkOliveGreen,DarkOrange,DarkOrchid,DarkRed,DarkSalmon,DarkSeaGreen,DarkSlateBlue,DarkSlateGray,DarkTurquoise,DarkViolet,DeepPink,DeepSkyBlue,DimGray,DodgerBlue,FireBrick,FloralWhite,ForestGreen,Fuchsia,Gainsboro,GhostWhite,Gold,Goldenrod,Gray,Green,GreenYellow,HoneyDew,HotPink,Indigo,Ivory,Khaki,Lavender,LavenderBlush,LawnGreen,LemonChiffon,LightBlue,LightCoral,LightCyan,LightGoldenrodYellow,LightGray,LightGreen,LightPink,LightSalmon,LightSalmon,LightSeaGreen,LightSkyBlue,LightSlateGray,LightSteelBlue,LightYellow,Lime,LimeGreen,Linen,Magenta,Maroon,MediumAquamarine,MediumBlue,MediumOrchid,MediumPurple,MediumSeaGreen,MediumSlateBlue,MediumSlateBlue,MediumSpringGreen,MediumTurquoise,MediumVioletRed,MidnightBlue,MintCream,MistyRose,Moccasin,NavajoWhite,Navy,OldLace,Olive,OliveDrab,Orange,OrangeRed,Orchid,PaleGoldenrod,PaleGreen,PaleTurquoise,PaleVioletRed,PapayaWhip,PeachPuff,Peru,Pink,Plum,PowderBlue,Purple,RebeccaPurple,Red,RosyBrown,RoyalBlue,SaddleBrown,Salmon,SandyBrown,SeaGreen,SeaShell,Sienna,Silver,SkyBlue,SlateBlue,SlateGray,Snow,SpringGreen,SteelBlue,Tan,Teal,Thistle,Tomato,Turquoise,Violet,Wheat,White,WhiteSmoke,Yellow,YellowGreen".split(",");
+             shuffle(cols);
+
+            function rand_percent(){
+                return Math.round(Math.random() * 100, 0) + "%"
+
+                }
+
+            var grad = 'radial-gradient(circle at 65% 15%, white 1px, ' + cols[0] + ' ' + rand_percent()+
+                ', ' + cols[1] + ' ' + rand_percent() + ', ' + cols[2] + ' ' + rand_percent() + ')';
+
+            return grad;
+        }
 
         function makeid(length) {
             let result = '';
@@ -45,6 +94,7 @@
                 let div = document.createElement("div");
                 div.id = id;
                 div.className = "ball"
+                div.style.background = newGradient();
                 document.body.appendChild(div);
             }
 
@@ -61,15 +111,33 @@
 
                     if (this_id || (!this_id && all_balls[ball_id] !== id)) {
                         const ball = document.getElementById(ball_id);
-                        const left = 50 + ball_info.data.x*50 + "%";
-                        const top = 50 - ball_info.data.y *50 + "%";
-                        console.log(left, top, ball_info);
+                        let screen_width = window.screen.width;
+                        let screen_height = window.screen.height;
 
+                        //orientation utter rubbish JS chaos
+                        if (screen_width < screen_height) {
+                            var temp = screen_width;
+                            screen_width = screen_width;
+                            screen_height = temp;
+                        }
+                        const ball_diameter = 50 - ball_info.data.z * 5 + 50;
+
+                        let left = screen_width * .5 - (ball_diameter * .25) - ball_info.data.x * 50;
+                        let top = screen_height * .5 + (ball_diameter * 1.25) + ball_info.data.y * 200;
+
+
+                        if (top > (screen_height - ball_diameter)) top = screen_height - ball_diameter;
+                        if (left > (screen_width - ball_diameter)) left = screen_width - ball_diameter;
+
+                        if (top < 0) top = 0;
+                        if (left < 0) left = 0;
+
+                        // console.log(top, left)
                         gsap.to(ball, {
                             left: left,
                             top: top,
-                            width: ball_info.data.z *5 + 50,
-                            height: ball_info.data.z*5  + 50
+                            width: ball_diameter,
+                            height: ball_diameter
                         })
                     }
             }
@@ -124,7 +192,7 @@
 
         link_ws();
 
-        const acl = new Accelerometer({frequency: 1});
+        const acl = new Accelerometer({frequency: 5});
         acl.addEventListener("reading", () => {
             var ball_data = {id: id, sensor: 'gyroscope', data: {x: acl.x, y: acl.y, z: acl.z}}
             var info_str = JSON.stringify(ball_data);

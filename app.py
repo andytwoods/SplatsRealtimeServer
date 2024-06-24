@@ -9,17 +9,23 @@ broker = Broker()
 app = Quart(__name__)
 app.debug = True
 
+app.jinja_env.auto_reload = True
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+
 # quart --app app --debug run
+# ./ngrok.exe http http://localhost:5000
 
 
 @app.route("/")
 async def home():
     return await render_template("index.html")
 
+
 async def _receive() -> None:
     while True:
         message = await websocket.receive()
         await broker.publish(message)
+
 
 @app.websocket("/ws")
 async def ws() -> None:
@@ -31,7 +37,6 @@ async def ws() -> None:
         task.cancel()
         await task
 
+
 if __name__ == '__main__':
     app.run()
-
-
