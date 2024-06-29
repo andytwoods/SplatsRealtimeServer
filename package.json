@@ -1,0 +1,12 @@
+{
+  "name": "my-project",
+  "source": "./src/index.js",
+  "browserslist": "> 0.5%, last 2 versions, not dead",
+  "scripts": {
+    "dev": "parcel serve src/index.js --dist-dir static/js",
+    "build": "parcel build src/index.js --dist-dir static/js"
+  },
+  "devDependencies": {
+    "parcel": "latest"
+  }
+}

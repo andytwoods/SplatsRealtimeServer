@@ -9,7 +9,7 @@ from broker import Broker
 
 # https://quart.palletsprojects.com/en/latest/tutorials/chat_tutorial.html#chat-tutorial
 broker = Broker()
-app = Quart(__name__)
+app = Quart(__name__, static_url_path='/static')
 app.debug = True
 
 app.jinja_env.auto_reload = True
