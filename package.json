@@ -8,5 +8,8 @@
   },
   "devDependencies": {
     "parcel": "latest"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^0.10.14"
   }
 }
