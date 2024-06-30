@@ -18,6 +18,7 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 # quart --app app --debug run
 # ./ngrok.exe http http://localhost:5000
 # ngrok http http://127.0.0.1:5000
+# npm run dev
 
 
 @app.route("/")
@@ -75,13 +76,6 @@ def play(pitch: float, yaw: float, roll: float):
     x = requests.put(url, data=json.dumps(data), headers=headers)
     print(x, x.text, 22)
 
-
-@app.cli.command("webpack_init")
-def webpack_init():
-    from cookiecutter.main import cookiecutter
-    import webpack_boilerplate
-    pkg_path = os.path.dirname(webpack_boilerplate.__file__)
-    cookiecutter(pkg_path, directory="frontend_template")
 
 
 if __name__ == '__main__':
