@@ -29,6 +29,7 @@ async def home():
 async def _receive() -> None:
     while True:
         message = await websocket.receive()
+        print(message,22)
         await broker.publish(message)
 
 
