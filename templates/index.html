@@ -14,6 +14,14 @@
             object-fit: cover;
         }
 
+        .mirror {
+            -moz-transform: scaleX(-1);
+            -o-transform: scaleX(-1);
+            -webkit-transform: scaleX(-1);
+            transform: scaleX(-1);
+        }
+
+
     </style>
 {% endblock css %}
 
@@ -25,8 +33,8 @@
                 <span class="mdc-button__label">ENABLE WEBCAM</span>
             </button>
             <div style="position: relative;">
-                <video id="webcam" autoplay playsinline></video>
-                <canvas class="output_canvas" id="output_canvas" width="1280" height="720"
+                <video id="webcam" class="mirror" autoplay playsinline></video>
+                <canvas class="output_canvas mirror" id="output_canvas" width="1280" height="720"
                         style="position: absolute; left: 0px; top: 0px;"></canvas>
                 <p id='gesture_output' class="output">
             </div>

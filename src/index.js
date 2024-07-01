@@ -53,7 +53,9 @@ function webcam() {
     const video = document.getElementById("webcam");
     const canvasElement = document.getElementById("output_canvas");
     const canvasCtx = canvasElement.getContext("2d");
+
     const gestureOutput = document.getElementById("gesture_output");
+
 
 // Check if webcam access is supported.
     function hasGetUserMedia() {
@@ -116,6 +118,7 @@ function webcam() {
         }
 
         canvasCtx.save();
+
         canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
         const drawingUtils = new DrawingUtils(canvasCtx);
 
@@ -140,6 +143,7 @@ function webcam() {
                 });
             }
         }
+
         canvasCtx.restore();
         if (results.gestures.length > 0) {
             gestureOutput.style.display = "block";
