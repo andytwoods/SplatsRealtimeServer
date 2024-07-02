@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^0.10.14",
+    "gsap": "^3.12.5",
     "throttle-debounce": "^5.0.2"
   }
 }

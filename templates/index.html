@@ -8,6 +8,7 @@
 
 {% block css %}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js@latest/pace-theme-default.min.css">
+    <link rel="stylesheet" href={{ url_for('static', filename='css/project.css') }} }>
     <style>
         video {
             width: 500px;
@@ -40,10 +41,14 @@
                 <div style="max-width:480px">
                     <p id='gesture_output-left' class="output"></p>
                     <p id='gesture_output-right' class="output"></p>
-                     <p id='gesture_output-meta' class="output"></p>
+                    <p id='gesture_output-meta' class="output"></p>
                 </div>
             </div>
         </div>
+    </section>
+
+    <section class="stage">
+        <figure id='ball' class="ball"><span class="shadow"></span></figure>
     </section>
 
     <div style="display: flex; height: 100%; flex-direction: column">

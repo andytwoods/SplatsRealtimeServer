@@ -14,6 +14,7 @@
 
 import {FilesetResolver, GestureRecognizer, DrawingUtils} from "@mediapipe/tasks-vision";
 import {throttle} from 'throttle-debounce';
+import gsap from "gsap";
 
 if (module.hot) {
     // module.hot.accept()
@@ -156,6 +157,11 @@ function webcam() {
                         gestureOutput_meta.style.width = videoWidth;
 
                         gestureOutput_meta.innerText = JSON.stringify(info, null, 2);
+
+                        gsap.to('#ball', {
+                        left:  (200 *info.x) + "%",
+                        top:  (-200 * info.y) + "%",
+                    })
 
                         throttleSensor(info);
                     }
