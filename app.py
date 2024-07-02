@@ -15,7 +15,7 @@ app.debug = True
 app.jinja_env.auto_reload = True
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
-# quart --app app --debug run
+# quart --app app --debug run --cert=https.crt --key=https.key
 # ./ngrok.exe http http://localhost:5000
 # ngrok http http://127.0.0.1:5000
 # npm run dev
