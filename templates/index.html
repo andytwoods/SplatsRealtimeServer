@@ -3,10 +3,11 @@
 
 {% block js %}
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pace-js@latest/pace.min.js"></script>
 {% endblock js %}
 
 {% block css %}
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js@latest/pace-theme-default.min.css">
     <style>
         video {
             width: 500px;
@@ -36,7 +37,11 @@
                 <video id="webcam" class="mirror" autoplay playsinline></video>
                 <canvas class="output_canvas mirror" id="output_canvas" width="1280" height="720"
                         style="position: absolute; left: 0px; top: 0px;"></canvas>
-                <p id='gesture_output' class="output">
+                <div style="max-width:480px">
+                    <p id='gesture_output-left' class="output"></p>
+                    <p id='gesture_output-right' class="output"></p>
+                     <p id='gesture_output-meta' class="output"></p>
+                </div>
             </div>
         </div>
     </section>

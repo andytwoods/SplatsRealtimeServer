@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import {FilesetResolver, GestureRecognizer, DrawingUtils} from "@mediapipe/tasks-vision";
-import { throttle } from 'throttle-debounce';
+import {throttle} from 'throttle-debounce';
 
 if (module.hot) {
     // module.hot.accept()
@@ -35,10 +35,14 @@ const createGestureRecognizer = async () => {
     const vision = await FilesetResolver.forVisionTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
     );
+
+    //const model_path = "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task";
+    const model_path = 'static/custom_model_2.task'
+
     gestureRecognizer = await GestureRecognizer.createFromOptions(vision, {
         baseOptions: {
             modelAssetPath:
-                "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
+            model_path,
             delegate: "GPU"
         },
         runningMode: runningMode,
@@ -54,8 +58,9 @@ function webcam() {
     const canvasElement = document.getElementById("output_canvas");
     const canvasCtx = canvasElement.getContext("2d");
 
-    const gestureOutput = document.getElementById("gesture_output");
-
+    const gestureOutput_left = document.getElementById("gesture_output-left");
+    const gestureOutput_right = document.getElementById("gesture_output-right");
+    const gestureOutput_meta = document.getElementById("gesture_output-meta");
 
 // Check if webcam access is supported.
     function hasGetUserMedia() {
@@ -102,9 +107,66 @@ function webcam() {
     let lastVideoTime = -1;
     let results = undefined;
 
-    const throttleSensor = throttle(100, (info) => {
+    const throttleSensor = throttle(50, (info) => {
         window.send_sensor_data('webcam_gesture', info);
     });
+
+    const meta_gesture = (function () {
+                let api = {};
+
+                let gestures = {};
+
+                function add_info(gesture_name, results) {
+                    gestures[gesture_name].last_updated = new Date();
+                    switch (gesture_name) {
+                        case 'ok':
+                            const thumb_tip1 = results.landmarks[0][4];
+                            const thumb_tip2 = results.landmarks[1][4];
+                            gestures[gesture_name]['gap'] = {
+                                x: Math.abs(thumb_tip1.x - thumb_tip2.x),
+                                y: Math.abs(thumb_tip1.y - thumb_tip2.y),
+                                z: Math.abs(thumb_tip1.z - thumb_tip2.z)
+                            }
+                            break;
+                    }
+                }
+
+                api.update = function (gesture_name, results) {
+                    if(gesture_name === 'ok') {
+                        if (!gestures[gesture_name] || (new Date() - gestures[gesture_name].last_updated > 500)) {
+                            console.log('setting up OK')
+                            gestures[gesture_name] = {
+                                last_updated: new Date(),
+                            }
+                            add_info(gesture_name, results);
+                            gestures[gesture_name]['baseline'] = gestures['ok'].gap;
+                            return
+                        }
+                        add_info(gesture_name, results);
+
+                        const info = {
+                            x: (gestures[gesture_name]['gap'].x - gestures[gesture_name]['baseline'].x).toFixed(2),
+                            y: (gestures[gesture_name]['gap'].y - gestures[gesture_name]['baseline'].y).toFixed(2),
+                            z: (gestures[gesture_name]['gap'].z - gestures[gesture_name]['baseline'].z).toFixed(2),
+                        }
+                        console.log(info);
+                        //window.send_sensor_data('webcam_gesture', info);
+
+                        gestureOutput_meta.style.display = "inline-block";
+                        gestureOutput_meta.style.width = videoWidth;
+
+                        gestureOutput_meta.innerText = JSON.stringify(info, null, 2);
+
+                        throttleSensor(info);
+                    }
+
+
+                }
+
+                return api;
+            }()
+        )
+    ;
 
 
     async function predictWebcam() {
@@ -145,21 +207,43 @@ function webcam() {
         }
 
         canvasCtx.restore();
+
         if (results.gestures.length > 0) {
-            gestureOutput.style.display = "block";
-            gestureOutput.style.width = videoWidth;
-            const categoryName = results.gestures[0][0].categoryName;
-            const categoryScore = parseFloat(
-                results.gestures[0][0].score * 100
-            ).toFixed(2);
-            const handedness = results.handednesses[0][0].displayName;
-            gestureOutput.innerText = `GestureRecognizer: ${categoryName}\n Confidence: ${categoryScore} %\n Handedness: ${handedness}`;
-            if(categoryName !== "None"){
-                throttleSensor({'gesture': categoryName});
+            gestureOutput_left.style.display = "none";
+            gestureOutput_right.style.display = "none";
+            gestureOutput_meta.style.display = "none";
+            for (let i = 0; i < results.gestures.length; i++) {
+                const handedness = results.handednesses[i][0].displayName;
+
+                let gestureOutput;
+
+                if (handedness === "Left") {
+                    gestureOutput = gestureOutput_left;
+
+                } else {
+                    gestureOutput = gestureOutput_right;
+                    gestureOutput.style.float = 'right';
+                }
+
+                gestureOutput.style.display = "inline-block";
+                gestureOutput.style.width = videoWidth;
+                const categoryName = results.gestures[i][0].categoryName;
+                const categoryScore = parseFloat(
+                    results.gestures[i][0].score * 100
+                ).toFixed(2);
+
+                gestureOutput.innerText = `GestureRecognizer: ${categoryName}\n Confidence: ${categoryScore} %\n Handedness: ${handedness}`;
+                if (categoryName !== "None") {
+                    //throttleSensor({'gesture': categoryName});
+                }
             }
-        } else {
-            gestureOutput.style.display = "none";
         }
+        if (results.gestures.length === 2) {
+            if (results.gestures[0][0].categoryName === results.gestures[1][0].categoryName) {
+                meta_gesture.update(results.gestures[0][0].categoryName, results);
+            }
+        }
+
         // Call this function again to keep predicting when the browser is ready.
         if (webcamRunning === true) {
             window.requestAnimationFrame(predictWebcam);
@@ -307,13 +391,13 @@ function websockets() {
             _ws.close();
             ws = undefined;
 
-            if(!linked){
+            if (!linked) {
                 return;
             }
             linked = false;
             console.log('lost connection, relinking shortly...')
             setTimeout(function () {
-                linked=true;
+                linked = true;
                 link_ws();
             }, 1000);
 
