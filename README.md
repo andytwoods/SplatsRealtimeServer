@@ -23,7 +23,6 @@
 ## Local dev
 - start quart server ```quart --app app --debug run --cert=https.crt --key=https.key```
 - start parcel (js) bundling insanity ```npm run dev```
-- start ngrok ```ngrok http http://127.0.0.1:5000```
 - visit the https server ngrok provides. Hey presto.
 - Note you'll get the below message but ...
 
