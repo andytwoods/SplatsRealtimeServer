@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {FilesetResolver, GestureRecognizer, DrawingUtils} from "@mediapipe/tasks-vision";
-import {throttle} from 'throttle-debounce';
+import { FilesetResolver, GestureRecognizer, DrawingUtils } from "@mediapipe/tasks-vision";
+import { throttle } from 'throttle-debounce';
 import gsap from "gsap";
 
 if (module.hot) {
@@ -43,7 +43,7 @@ const createGestureRecognizer = async () => {
     gestureRecognizer = await GestureRecognizer.createFromOptions(vision, {
         baseOptions: {
             modelAssetPath:
-            model_path,
+                model_path,
             delegate: "GPU"
         },
         runningMode: runningMode,
@@ -63,13 +63,13 @@ function webcam() {
     const gestureOutput_right = document.getElementById("gesture_output-right");
     const gestureOutput_meta = document.getElementById("gesture_output-meta");
 
-// Check if webcam access is supported.
+    // Check if webcam access is supported.
     function hasGetUserMedia() {
         return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
     }
 
-// If webcam supported, add event listener to button for when user
-// wants to activate it.
+    // If webcam supported, add event listener to button for when user
+    // wants to activate it.
     if (hasGetUserMedia()) {
         enableWebcamButton = document.getElementById("webcamButton");
         enableWebcamButton.addEventListener("click", enableCam);
@@ -77,7 +77,7 @@ function webcam() {
         console.warn("getUserMedia() is not supported by your browser");
     }
 
-// Enable the live webcam view and start detection.
+    // Enable the live webcam view and start detection.
     function enableCam(event) {
         if (!gestureRecognizer) {
             alert("Please wait for gestureRecognizer to load");
@@ -113,66 +113,87 @@ function webcam() {
     });
 
     const meta_gesture = (function () {
-                let api = {};
+        let api = {};
 
-                let gestures = {};
+        let gestures = {};
 
-                function add_info(gesture_name, results) {
-                    gestures[gesture_name].last_updated = new Date();
-                    switch (gesture_name) {
-                        case 'ok':
-                            const thumb_tip1 = results.landmarks[0][4];
-                            const thumb_tip2 = results.landmarks[1][4];
-                            gestures[gesture_name]['gap'] = {
-                                x: Math.abs(thumb_tip1.x - thumb_tip2.x),
-                                y: Math.abs(thumb_tip1.y - thumb_tip2.y),
-                                z: Math.abs(thumb_tip1.z - thumb_tip2.z)
-                            }
-                            break;
+        function add_info(gesture_name, results) {
+            gestures[gesture_name].last_updated = new Date();
+            const thumb_tip1 = results.landmarks[0][4];
+            const thumb_tip2 = results.landmarks[1][4];
+            switch (gesture_name) {
+                case 'ok':
+                    gestures[gesture_name]['gap'] = {
+                        x: Math.abs(thumb_tip1.x - thumb_tip2.x),
+                        y: Math.abs(thumb_tip1.y - thumb_tip2.y),
+                        z: Math.abs(thumb_tip1.z - thumb_tip2.z)
                     }
-                }
-
-                api.update = function (gesture_name, results) {
-                    if(gesture_name === 'ok') {
-                        if (!gestures[gesture_name] || (new Date() - gestures[gesture_name].last_updated > 500)) {
-                            console.log('setting up OK')
-                            gestures[gesture_name] = {
-                                last_updated: new Date(),
-                            }
-                            add_info(gesture_name, results);
-                            gestures[gesture_name]['baseline'] = gestures['ok'].gap;
-                            return
-                        }
-                        add_info(gesture_name, results);
-
-                        const info = {
-                            x: (gestures[gesture_name]['gap'].x - gestures[gesture_name]['baseline'].x).toFixed(2),
-                            y: (gestures[gesture_name]['gap'].y - gestures[gesture_name]['baseline'].y).toFixed(2),
-                            z: (gestures[gesture_name]['gap'].z - gestures[gesture_name]['baseline'].z).toFixed(2),
-                        }
-                        console.log(info);
-                        //window.send_sensor_data('webcam_gesture', info);
-
-                        gestureOutput_meta.style.display = "inline-block";
-                        gestureOutput_meta.style.width = videoWidth;
-
-                        gestureOutput_meta.innerText = JSON.stringify(info, null, 2);
-
-                        gsap.to('#ball', {
-                        left:  (200 *info.x) + "%",
-                        top:  (-200 * info.y) + "%",
-                    })
-
-                        throttleSensor(info);
+                    break;
+                case 'palm':
+                    gestures[gesture_name]['gap'] = {
+                        x: Math.abs(thumb_tip1.x - thumb_tip2.x),
+                        y: Math.abs(thumb_tip1.y - thumb_tip2.y),
+                        z: Math.abs(thumb_tip1.z - thumb_tip2.z)
                     }
+                    break;
+                case 'paper':
+                    gestures[gesture_name]['gap'] = {
+                        x: Math.abs(thumb_tip1.x - thumb_tip2.x),
+                        y: Math.abs(thumb_tip1.y - thumb_tip2.y),
+                        z: Math.abs(thumb_tip1.z - thumb_tip2.z)
+                    }
+                    break;
+                case 'rock':
+                    gestures[gesture_name]['gap'] = {
+                        x: Math.abs(thumb_tip1.x - thumb_tip2.x),
+                        y: Math.abs(thumb_tip1.y - thumb_tip2.y),
+                        z: Math.abs(thumb_tip1.z - thumb_tip2.z)
+                    }
+                    break;
+            }
+        }
 
-
+        api.update = function (gesture_name, results) {
+            if (gesture_name === 'ok' || gesture_name === 'palm' || gesture_name === 'rock' || gesture_name === 'paper') {
+                if (!gestures[gesture_name] || (new Date() - gestures[gesture_name].last_updated > 500)) {
+                    console.log('setting up OK')
+                    gestures[gesture_name] = {
+                        last_updated: new Date(),
+                    }
+                    add_info(gesture_name, results);
+                    gestures[gesture_name]['baseline'] = gestures[gesture_name].gap;
+                    return
                 }
+                add_info(gesture_name, results);
 
-                return api;
-            }()
-        )
-    ;
+                const info = {
+                    x: (gestures[gesture_name]['gap'].x - gestures[gesture_name]['baseline'].x).toFixed(2),
+                    y: (gestures[gesture_name]['gap'].y - gestures[gesture_name]['baseline'].y).toFixed(2),
+                    z: (gestures[gesture_name]['gap'].z - gestures[gesture_name]['baseline'].z).toFixed(2),
+                }
+                console.log(info);
+                //window.send_sensor_data('webcam_gesture', info);
+
+                gestureOutput_meta.style.display = "inline-block";
+                gestureOutput_meta.style.width = videoWidth;
+
+                gestureOutput_meta.innerText = JSON.stringify(info, null, 2);
+
+                gsap.to('#ball', {
+                    left: (200 * info.x) + "%",
+                    top: (-200 * info.y) + "%",
+                })
+
+                throttleSensor(info);
+            }
+
+
+        }
+
+        return api;
+    }()
+    )
+        ;
 
 
     async function predictWebcam() {
@@ -328,9 +349,9 @@ function websockets() {
             if (all_balls[ball_id] === undefined) {
                 console.log(ball_id)
                 gen_ball(ball_id);
-                all_balls[ball_id] = {data: {}}
+                all_balls[ball_id] = { data: {} }
             }
-            all_balls[ball_id] = {data: ball_info.data}
+            all_balls[ball_id] = { data: ball_info.data }
 
             if (this_id || all_balls[ball_id] !== id)
 
@@ -428,9 +449,9 @@ function websockets() {
 
     link_ws();
 
-    const acl = new Accelerometer({frequency: 5});
+    const acl = new Accelerometer({ frequency: 5 });
     acl.addEventListener("reading", () => {
-        var ball_data = {id: id, sensor: 'gyroscope', data: {x: acl.x, y: acl.y, z: acl.z}}
+        var ball_data = { id: id, sensor: 'gyroscope', data: { x: acl.x, y: acl.y, z: acl.z } }
         var info_str = JSON.stringify(ball_data);
         balls.move(ball_data, true);
         if (!!ws) ws.send(info_str);
@@ -439,7 +460,7 @@ function websockets() {
     acl.start();
 
     window.send_sensor_data = function (sensor, data) {
-        var info_str = JSON.stringify({id: id, sensor: sensor, data: data});
+        var info_str = JSON.stringify({ id: id, sensor: sensor, data: data });
         console.log('sending:', info_str);
         if (!!ws) ws.send(info_str);
     }
