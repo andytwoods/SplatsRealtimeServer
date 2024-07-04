@@ -15,6 +15,7 @@ app.debug = True
 app.jinja_env.auto_reload = True
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
+
 # quart --app app --debug run --cert=https.crt --key=https.key
 # ./ngrok.exe http http://localhost:5000
 # ngrok http http://127.0.0.1:5000
@@ -29,7 +30,7 @@ async def home():
 async def _receive() -> None:
     while True:
         message = await websocket.receive()
-        print(message,22)
+        contact_unreal(message)
         await broker.publish(message)
 
 
@@ -42,6 +43,36 @@ async def ws() -> None:
     finally:
         task.cancel()
         await task
+
+
+def contact_unreal(message):
+
+    sensor = message.sensor
+
+    if sensor == 'OK':
+        function = 'SetRelativeRotation'
+        data = {"NewRotation": {
+                "Pitch": pitch,
+                "Yaw": yaw,
+                "Roll": roll
+            }}
+    elif sensor == 'x':
+        function = 'x'
+        data = {
+
+        }
+
+    url = 'http://localhost:30010/remote/object/call/'
+    data = {
+        "objectPath": "/Game/Levels/XV3DGS_GaussianFabbrika.XV3DGS_GaussianFabbrika:PersistentLevel.fabbrika_actor_C_UAID_C01803BB37E14AFE01_1235782410.RootComponent",
+        "functionName": function,
+        "parameters": data
+        }
+    }
+
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+    x = requests.put(url, data=json.dumps(data), headers=headers)
+    print(x, x.text, 22)
 
 
 def play(pitch: float, yaw: float, roll: float):
@@ -76,7 +107,6 @@ def play(pitch: float, yaw: float, roll: float):
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     x = requests.put(url, data=json.dumps(data), headers=headers)
     print(x, x.text, 22)
-
 
 
 if __name__ == '__main__':
