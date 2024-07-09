@@ -108,7 +108,7 @@ function webcam() {
     let lastVideoTime = -1;
     let results = undefined;
 
-    const throttleSensor = throttle(50, (info) => {
+    const throttleSensor = throttle(1000, (info) => {
         window.send_sensor_data('webcam_gesture', info);
     });
 
@@ -150,8 +150,6 @@ function webcam() {
                             y: (gestures[gesture_name]['gap'].y - gestures[gesture_name]['baseline'].y).toFixed(2),
                             z: (gestures[gesture_name]['gap'].z - gestures[gesture_name]['baseline'].z).toFixed(2),
                         }
-                        console.log(info);
-                        //window.send_sensor_data('webcam_gesture', info);
 
                         gestureOutput_meta.style.display = "inline-block";
                         gestureOutput_meta.style.width = videoWidth;
@@ -440,8 +438,14 @@ function websockets() {
 
     window.send_sensor_data = function (sensor, data) {
         var info_str = JSON.stringify({id: id, sensor: sensor, data: data});
-        console.log('sending:', info_str);
-        if (!!ws) ws.send(info_str);
+
+        if (!!ws) {
+            console.log('sending:', info_str);
+            ws.send(info_str);
+        }
+        else{
+            console.log('ws not working...')
+        }
     }
 
 }

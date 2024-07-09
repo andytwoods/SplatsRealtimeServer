@@ -29,6 +29,7 @@ async def home():
 
 async def _receive() -> None:
     while True:
+        print(33434)
         message = await websocket.receive()
         contact_unreal(message)
         await broker.publish(message)
@@ -45,37 +46,45 @@ async def ws() -> None:
         await task
 
 
+
 def contact_unreal(message):
 
-    sensor = message.sensor
+    payload = json.loads(message)
+    sensor = payload['sensor']
 
-    if sensor == 'OK':
-        function = 'SetRelativeRotation'
-        data = {"NewRotation": {
-                "Pitch": pitch,
-                "Yaw": yaw,
-                "Roll": roll
-            }}
-    elif sensor == 'x':
-        function = 'x'
-        data = {
 
-        }
+
+    function_nam = 'SetRelativeRotation'
+    data = {"NewRotation": {
+        "Pitch": float(payload['data']['x'])*360,
+        "Yaw": float(payload['data']['y'])*360,
+        "Roll": float(payload['data']['z'])*360
+    }}
+
 
     url = 'http://localhost:30010/remote/object/call/'
     data = {
-        "objectPath": "/Game/Levels/XV3DGS_GaussianFabbrika.XV3DGS_GaussianFabbrika:PersistentLevel.fabbrika_actor_C_UAID_C01803BB37E14AFE01_1235782410.RootComponent",
-        "functionName": function,
+        "objectPath": "/Game/Levels/XV3DGS_SplatScene.XV3DGS_SplatScene:PersistentLevel.bikeshelter_actor_C_1.RootComponent",
+        "functionName": function_nam,
         "parameters": data
         }
-    }
+
 
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    x = requests.put(url, data=json.dumps(data), headers=headers)
-    print(x, x.text, 22)
+    print('sending', data)
+
+    try:
+        x = requests.put(url, data=json.dumps(data), headers=headers, timeout=1)
+        print(x,11111)
+    except requests.exceptions.Timeout:
+        print("Timed out")
+    except Exception as e:
+        print(11, e)
+
+    print('sent', x)
 
 
-def play(pitch: float, yaw: float, roll: float):
+def play(pitch: float = 0, yaw: float = 0, roll: float = 0):
     # url = 'http://localhost:30010/remote/object/property/'
     # data = {
     #     "objectPath": "/Game/Levels/XV3DGS_GaussianFabbrika.XV3DGS_GaussianFabbrika:PersistentLevel.fabbrika_actor_C_UAID_C01803BB37E14AFE01_1235782410.NiagaraComponent",
@@ -91,17 +100,41 @@ def play(pitch: float, yaw: float, roll: float):
     #     "propertyValue": {"X": 100, "Y": 0, "Z": 0}
     # }
 
+    # url = 'http://localhost:30010/remote/object/call/'
+    # data = {
+    #     "objectPath": "/Game/Levels/XV3DGS_SplatScene.XV3DGS_SplatScene:PersistentLevel.bikeshelter_actor_C_1.RootComponent",
+    #     "functionName": "SetRelativeRotation",
+    #     "parameters": {
+    #         "NewRotation": {
+    #             "Pitch": 100,
+    #             "Yaw": 0,
+    #             "Roll": 100
+    #         }
+    #     }
+    # }
+
+    # data = {
+    #     "objectPath": "/Game/Levels/XV3DGS_SplatScene.XV3DGS_SplatScene:PersistentLevel.bikeshelter_actor_C_1.RootComponent",
+    #     "functionName": "SetRelativeRotation",
+    #     "parameters": {
+    #         "NewRotation": {
+    #             "Pitch": 100,
+    #             "Yaw": 0,
+    #             "Roll": 100
+    #         }
+    #     }
+    # }
+
     url = 'http://localhost:30010/remote/object/call/'
+
     data = {
-        "objectPath": "/Game/Levels/XV3DGS_GaussianFabbrika.XV3DGS_GaussianFabbrika:PersistentLevel.fabbrika_actor_C_UAID_C01803BB37E14AFE01_1235782410.RootComponent",
-        "functionName": "SetRelativeRotation",
-        "parameters": {
-            "NewRotation": {
-                "Pitch": pitch,
-                "Yaw": yaw,
-                "Roll": roll
-            }
-        }
+        "objectPath": "/Game/Levels/XV3DGS_SplatScene.XV3DGS_SplatScene:PersistentLevel.bikeshelter_actor_C_1.RootComponent",
+        "functionName": 'SetRelativeRotation',
+        "parameters": {"NewRotation": {
+                 "Pitch": 0,
+                "Yaw": 100,
+                "Roll": 100
+            }}
     }
 
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
@@ -109,5 +142,8 @@ def play(pitch: float, yaw: float, roll: float):
     print(x, x.text, 22)
 
 
+#play()
+
 if __name__ == '__main__':
-    app.run()
+    pass
+    # app.run()
