@@ -108,8 +108,9 @@ function webcam() {
     let lastVideoTime = -1;
     let results = undefined;
 
-    const throttleSensor = throttle(1000, (info) => {
+    const throttleSensor = throttle(100, (info) => {
         window.send_sensor_data('webcam_gesture', info);
+
     });
 
     const meta_gesture = (function () {
@@ -133,7 +134,7 @@ function webcam() {
                 }
 
                 api.update = function (gesture_name, results) {
-                    if(gesture_name === 'ok') {
+                    if (gesture_name === 'ok') {
                         if (!gestures[gesture_name] || (new Date() - gestures[gesture_name].last_updated > 500)) {
                             console.log('setting up OK')
                             gestures[gesture_name] = {
@@ -157,9 +158,9 @@ function webcam() {
                         gestureOutput_meta.innerText = JSON.stringify(info, null, 2);
 
                         gsap.to('#ball', {
-                        left:  (200 *info.x) + "%",
-                        top:  (-200 * info.y) + "%",
-                    })
+                            left: (200 * info.x) + "%",
+                            top: (-200 * info.y) + "%",
+                        })
 
                         throttleSensor(info);
                     }
@@ -226,7 +227,6 @@ function webcam() {
 
                 } else {
                     gestureOutput = gestureOutput_right;
-                    gestureOutput.style.float = 'right';
                 }
 
                 gestureOutput.style.display = "inline-block";
@@ -237,16 +237,23 @@ function webcam() {
                 ).toFixed(2);
 
                 gestureOutput.innerText = `GestureRecognizer: ${categoryName}\n Confidence: ${categoryScore} %\n Handedness: ${handedness}`;
-                if (categoryName !== "None") {
-                    //throttleSensor({'gesture': categoryName});
+
+                if (categoryName === "ok") {
+                    var thumb_tip = results.landmarks[0][4];
+                    throttleSensor({'x': thumb_tip.x, 'y': thumb_tip.y, 'z':thumb_tip.z });
+                    gsap.to('#ball', {
+                            left: ((-200 * thumb_tip.x) - 20) + "%",
+                            top: ((200 * thumb_tip.y) - 20) + "%",
+                        })
                 }
+
             }
         }
-        if (results.gestures.length === 2) {
-            if (results.gestures[0][0].categoryName === results.gestures[1][0].categoryName) {
-                meta_gesture.update(results.gestures[0][0].categoryName, results);
-            }
-        }
+        // if (results.gestures.length === 2) {
+        //     if (results.gestures[0][0].categoryName === results.gestures[1][0].categoryName) {
+        //         meta_gesture.update(results.gestures[0][0].categoryName, results);
+        //     }
+        // }
 
         // Call this function again to keep predicting when the browser is ready.
         if (webcamRunning === true) {
@@ -436,7 +443,7 @@ function websockets() {
 
     acl.start();
 
-    window.send_sensor_data = function (sensor, data) {
+    /*window.send_sensor_data = function (sensor, data) {
         var info_str = JSON.stringify({id: id, sensor: sensor, data: data});
 
         if (!!ws) {
@@ -446,6 +453,44 @@ function websockets() {
         else{
             console.log('ws not working...')
         }
+    }*/
+
+    var ws_js_to_unreal = new WebSocket('ws://127.0.0.1:30020');
+    ws_js_to_unreal.onopen = function () {
+        console.log(23233,"Connection Open");
+    };
+    ws_js_to_unreal.onerror = function (error) {
+    };
+    ws_js_to_unreal.onmessage = function (message) {
+       console.log(11111, message)
+    };
+    ws_js_to_unreal.onclose = function (event) {
+        console.log("WebSocket is closed now.");
+    };
+
+    window.send_sensor_data = function (sensor, data) {
+        var info_str = JSON.stringify({id: id, sensor: sensor, data: data});
+        var data = {	"MessageName": "http",
+		"Parameters" :{
+			"Url": "/remote/object/call",
+			"Verb": "Put",
+        	"Body": {
+				"ObjectPath": "/Game/Levels/XV3DGS_SplatScene.XV3DGS_SplatScene:PersistentLevel.bikeshelter_actor_C_1.RootComponent",
+				"propertyName": "StreamingDistanceMultiplier",
+				 "functionName": "SetRelativeRotation",
+				"parameters": {"NewRotation": {
+						 "Pitch": data.x * 100,
+						"Yaw": data.y * 100,
+						"Roll": data.z * 100
+					    }
+                }
+			    }
+             }
+        }
+
+        ws_js_to_unreal.send(JSON.stringify(data));
+        console.log(3232232, 'sent')
+
     }
 
 }
