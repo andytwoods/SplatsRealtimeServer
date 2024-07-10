@@ -7,7 +7,7 @@
     height: 50px;
     width: 50px;
     background: radial-gradient(circle at 50px 50px, #bb5cff, #000);
-    position: absolute;
+
 }
 
 .ball .shadow {

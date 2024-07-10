@@ -34,7 +34,7 @@ const videoWidth = "480px";
 // get everything needed to run.
 const createGestureRecognizer = async () => {
     const vision = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+        "static"
     );
 
     //const model_path = "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task";
@@ -49,6 +49,7 @@ const createGestureRecognizer = async () => {
         runningMode: runningMode,
         numHands: 5
     });
+    document.getElementById('webcamButton').textContent = 'Click to start!'
 };
 
 window.addEventListener('load', createGestureRecognizer);
@@ -90,6 +91,7 @@ function webcam() {
         } else {
             webcamRunning = true;
             enableWebcamButton.innerText = "DISABLE PREDICTIONS";
+            enableWebcamButton.style.visibility = 'hidden';
         }
 
         // getUsermedia parameters.
@@ -218,9 +220,12 @@ function webcam() {
             gestureOutput_right.style.display = "none";
             gestureOutput_meta.style.display = "none";
             for (let i = 0; i < results.gestures.length; i++) {
-                const handedness = results.handednesses[i][0].displayName;
+                let handedness = results.handednesses[i][0].displayName;
 
                 let gestureOutput;
+
+                if(handedness === "Left") handedness = 'Right'
+                else handedness = 'Left'
 
                 if (handedness === "Left") {
                     gestureOutput = gestureOutput_left;
@@ -240,10 +245,11 @@ function webcam() {
 
                 if (categoryName === "ok") {
                     var thumb_tip = results.landmarks[0][4];
+                    console.log(thumb_tip)
                     throttleSensor({'x': thumb_tip.x, 'y': thumb_tip.y, 'z':thumb_tip.z });
                     gsap.to('#ball', {
-                            left: ((-200 * thumb_tip.x) - 20) + "%",
-                            top: ((200 * thumb_tip.y) - 20) + "%",
+                            right: (document.body.clientWidth * thumb_tip.x) + "px",
+                            top:  (document.body.clientHeight * thumb_tip.y) + "px",
                         })
                 }
 

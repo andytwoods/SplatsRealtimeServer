@@ -30,9 +30,8 @@
 {% block content %}
     <section>
         <div id="liveView" class="videoView">
-            <button id="webcamButton" class="mdc-button mdc-button--raised">
-                <span class="mdc-button__ripple"></span>
-                <span class="mdc-button__label">ENABLE WEBCAM</span>
+            <button id="webcamButton" class="mdc-button mdc-button--raised" style="width:200px; height: 100px; position: absolute; left: 10%; top: 10%; z-index: 1000;">
+                loading models...
             </button>
             <div style="position: relative;">
                 <video id="webcam" class="mirror" autoplay playsinline></video>
@@ -47,9 +46,9 @@
         </div>
     </section>
 
-    <section class="stage">
-        <figure id='ball' class="ball"><span class="shadow"></span></figure>
-    </section>
+    <div class="stage">
+        <figure id='ball' style="position: fixed;" class="ball"><span class="shadow"></span></figure>
+    </div>
 
     <div style="display: flex; height: 100%; flex-direction: column">
         <ul id="messages" style="flex-grow: 1; list-style-type: none"></ul>
