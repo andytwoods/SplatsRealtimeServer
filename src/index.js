@@ -181,7 +181,7 @@ function webcam() {
                     if (categoryName === "ok") {
                         gesture_action.ok(results.landmarks[i]);
                     }
-                } else {
+                } else { // only when right hand
                     const outcome = gesture_action.count(results.landmarks[i]);
                     if(!!outcome) categoryName = outcome;
                 }
@@ -364,6 +364,7 @@ function websockets() {
         console.log("unreal websocket connection Open");
     };
     ws_js_to_unreal.onerror = function (error) {
+        console.log('unreal websocket error', error)
     };
     ws_js_to_unreal.onmessage = function (message) {
         //console.log(message)
@@ -373,7 +374,7 @@ function websockets() {
     };
 
     window.send_sensor_data = function (sensor, data) {
-        if (!!ws_js_to_unreal){
+        if (!ws_js_to_unreal){
             console.log('no connection to unreal websocket. Check it is switched on', sensor, data)
             return;
         }
@@ -392,7 +393,7 @@ function websockets() {
                 }
             }
         }
-        else if(sensor_info === 'count'){
+        else if(sensor === 'count'){
             sensor_info = {
                 "objectPath": "/Game/Levels/TweeningScene.TweeningScene:PersistentLevel.TweenInterface_C_2",
                 "functionName": "TweenTo",
@@ -426,7 +427,7 @@ function websockets() {
                 "Body": sensor_info
             }
         }
-        console.log(payload);
+        //console.log(payload);
         ws_js_to_unreal.send(JSON.stringify(payload));
 
     }
