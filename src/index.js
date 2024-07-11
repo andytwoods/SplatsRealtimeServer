@@ -38,7 +38,7 @@ const createGestureRecognizer = async () => {
     );
 
     //const model_path = "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task";
-    const model_path = 'static/custom_model_2.task'
+    const model_path = 'static/custom_model_1.task'
 
     gestureRecognizer = await GestureRecognizer.createFromOptions(vision, {
         baseOptions: {
@@ -110,71 +110,6 @@ function webcam() {
     let lastVideoTime = -1;
     let results = undefined;
 
-    const throttleSensor = throttle(100, (info) => {
-        window.send_sensor_data('webcam_gesture', info);
-
-    });
-
-    const meta_gesture = (function () {
-                let api = {};
-
-                let gestures = {};
-
-                function add_info(gesture_name, results) {
-                    gestures[gesture_name].last_updated = new Date();
-                    switch (gesture_name) {
-                        case 'ok':
-                            const thumb_tip1 = results.landmarks[0][4];
-                            const thumb_tip2 = results.landmarks[1][4];
-                            gestures[gesture_name]['gap'] = {
-                                x: Math.abs(thumb_tip1.x - thumb_tip2.x),
-                                y: Math.abs(thumb_tip1.y - thumb_tip2.y),
-                                z: Math.abs(thumb_tip1.z - thumb_tip2.z)
-                            }
-                            break;
-                    }
-                }
-
-                api.update = function (gesture_name, results) {
-                    if (gesture_name === 'ok') {
-                        if (!gestures[gesture_name] || (new Date() - gestures[gesture_name].last_updated > 500)) {
-                            console.log('setting up OK')
-                            gestures[gesture_name] = {
-                                last_updated: new Date(),
-                            }
-                            add_info(gesture_name, results);
-                            gestures[gesture_name]['baseline'] = gestures['ok'].gap;
-                            return
-                        }
-                        add_info(gesture_name, results);
-
-                        const info = {
-                            x: (gestures[gesture_name]['gap'].x - gestures[gesture_name]['baseline'].x).toFixed(2),
-                            y: (gestures[gesture_name]['gap'].y - gestures[gesture_name]['baseline'].y).toFixed(2),
-                            z: (gestures[gesture_name]['gap'].z - gestures[gesture_name]['baseline'].z).toFixed(2),
-                        }
-
-                        gestureOutput_meta.style.display = "inline-block";
-                        gestureOutput_meta.style.width = videoWidth;
-
-                        gestureOutput_meta.innerText = JSON.stringify(info, null, 2);
-
-                        gsap.to('#ball', {
-                            left: (200 * info.x) + "%",
-                            top: (-200 * info.y) + "%",
-                        })
-
-                        throttleSensor(info);
-                    }
-
-
-                }
-
-                return api;
-            }()
-        )
-    ;
-
 
     async function predictWebcam() {
         const webcamElement = document.getElementById("webcam");
@@ -219,12 +154,13 @@ function webcam() {
             gestureOutput_left.style.display = "none";
             gestureOutput_right.style.display = "none";
             gestureOutput_meta.style.display = "none";
+
             for (let i = 0; i < results.gestures.length; i++) {
                 let handedness = results.handednesses[i][0].displayName;
 
                 let gestureOutput;
 
-                if(handedness === "Left") handedness = 'Right'
+                if (handedness === "Left") handedness = 'Right'
                 else handedness = 'Left'
 
                 if (handedness === "Left") {
@@ -236,30 +172,25 @@ function webcam() {
 
                 gestureOutput.style.display = "inline-block";
                 gestureOutput.style.width = videoWidth;
-                const categoryName = results.gestures[i][0].categoryName;
+                let categoryName = results.gestures[i][0].categoryName;
                 const categoryScore = parseFloat(
                     results.gestures[i][0].score * 100
                 ).toFixed(2);
 
+                if (handedness === "Left") {
+                    if (categoryName === "ok") {
+                        gesture_action.ok(results.landmarks[i]);
+                    }
+                } else {
+                    categoryName = gesture_action.count(results.landmarks[i]);
+
+                }
+
                 gestureOutput.innerText = `GestureRecognizer: ${categoryName}\n Confidence: ${categoryScore} %\n Handedness: ${handedness}`;
 
-                if (categoryName === "ok") {
-                    var thumb_tip = results.landmarks[0][4];
-                    console.log(thumb_tip)
-                    throttleSensor({'x': thumb_tip.x, 'y': thumb_tip.y, 'z':thumb_tip.z });
-                    gsap.to('#ball', {
-                            right: (document.body.clientWidth * thumb_tip.x) + "px",
-                            top:  (document.body.clientHeight * thumb_tip.y) + "px",
-                        })
-                }
 
             }
         }
-        // if (results.gestures.length === 2) {
-        //     if (results.gestures[0][0].categoryName === results.gestures[1][0].categoryName) {
-        //         meta_gesture.update(results.gestures[0][0].categoryName, results);
-        //     }
-        // }
 
         // Call this function again to keep predicting when the browser is ready.
         if (webcamRunning === true) {
@@ -267,6 +198,51 @@ function webcam() {
         }
     }
 }
+
+const gesture_action = (function () {
+    let api = {}
+
+    const throttleSensor = throttle(100, (gesture, info) => {
+        window.send_sensor_data(gesture, info);
+
+    });
+
+    api.ok = function (landmarks) {
+        var thumb_tip = landmarks[4];
+        throttleSensor('ok', {'x': thumb_tip.x, 'y': thumb_tip.y, 'z': thumb_tip.z});
+        gsap.to('#ball', {
+            right: (document.body.clientWidth * thumb_tip.x) + "px",
+            top: (document.body.clientHeight * thumb_tip.y) + "px",
+        })
+    }
+
+    api.count = function (landmarks) {
+        let index = -1;
+
+        let indexgap = (Math.abs(landmarks[4].x - landmarks[8].x) + Math.abs(landmarks[4].y - landmarks[8].y)) / 2;
+        let middlegap = (Math.abs(landmarks[4].x - landmarks[12].x) + Math.abs(landmarks[4].y - landmarks[12].y)) / 2;
+        let ringgap = (Math.abs(landmarks[4].x - landmarks[16].x) + Math.abs(landmarks[4].y - landmarks[16].y)) / 2;
+        let pinkygap = (Math.abs(landmarks[4].x - landmarks[20].x) + Math.abs(landmarks[4].y - landmarks[20].y)) / 2;
+
+        index = undefined
+        if (indexgap < 0.015) {
+            index = 0;
+        } else if (middlegap < 0.015) {
+            index = 1;
+        } else if (ringgap < 0.015) {
+            index = 2;
+        } else if (pinkygap < 0.015) {
+            index = 3;
+        }
+        if (!!index) {
+            throttleSensor('count', {'index': index});
+        }
+        return index;
+
+    }
+
+    return api;
+}());
 
 window.addEventListener('load', webcam);
 
@@ -280,7 +256,7 @@ function websockets() {
             let currentIndex = array.length;
 
             // While there remain elements to shuffle...
-            while (currentIndex != 0) {
+            while (currentIndex !== 0) {
 
                 // Pick a remaining element...
                 let randomIndex = Math.floor(Math.random() * currentIndex);
@@ -337,7 +313,6 @@ function websockets() {
         api.move = function (ball_info, this_id) {
             const ball_id = ball_info['id'];
             if (all_balls[ball_id] === undefined) {
-                console.log(ball_id)
                 gen_ball(ball_id);
                 all_balls[ball_id] = {data: {}}
             }
@@ -350,12 +325,6 @@ function websockets() {
                     let screen_width = window.screen.width;
                     let screen_height = window.screen.height;
 
-                    //orientation utter rubbish JS chaos
-                    if (screen_width < screen_height) {
-                        var temp = screen_width;
-                        screen_width = screen_width;
-                        screen_height = temp;
-                    }
                     const ball_diameter = 50 - ball_info.data.z * 5 + 50;
 
                     let left = screen_width * .5 - (ball_diameter * .25) - ball_info.data.x * 50;
@@ -382,63 +351,6 @@ function websockets() {
     }());
 
 
-    function link_ws() {
-        console.log('linking...')
-        let linked = true;
-
-        let ws_url = `://${location.host}/ws`
-        if (window.location.href.indexOf("https") !== -1) {
-            ws_url = 'wss' + ws_url
-        } else {
-            ws_url = 'ws' + ws_url;
-        }
-        const _ws = new WebSocket(ws_url);
-
-        _ws.addEventListener('message', function (event) {
-
-            const ball_info = JSON.parse(event.data);
-            if (ball_info.id === id) return;
-            balls.move(ball_info);
-            // const li = document.createElement("li");
-            //li.appendChild(document.createTextNode(event.data));
-            //document.getElementById("messages").appendChild(li);
-        });
-
-        function reconnect() {
-            _ws.close();
-            ws = undefined;
-
-            if (!linked) {
-                return;
-            }
-            linked = false;
-            console.log('lost connection, relinking shortly...')
-            setTimeout(function () {
-                linked = true;
-                link_ws();
-            }, 1000);
-
-        }
-
-        _ws.addEventListener('close', reconnect);
-        _ws.addEventListener('error', reconnect);
-        _ws.addEventListener('open', function () {
-            console.log('ws connected');
-            ws = _ws;
-        });
-
-        function send(event) {
-            const message = (new FormData(event.target)).get("message");
-            if (message) {
-                ws.send(message);
-            }
-            event.target.reset();
-            return false;
-        }
-    }
-
-    link_ws();
-
     const acl = new Accelerometer({frequency: 5});
     acl.addEventListener("reading", () => {
         var ball_data = {id: id, sensor: 'gyroscope', data: {x: acl.x, y: acl.y, z: acl.z}}
@@ -449,53 +361,76 @@ function websockets() {
 
     acl.start();
 
-    /*window.send_sensor_data = function (sensor, data) {
-        var info_str = JSON.stringify({id: id, sensor: sensor, data: data});
-
-        if (!!ws) {
-            console.log('sending:', info_str);
-            ws.send(info_str);
-        }
-        else{
-            console.log('ws not working...')
-        }
-    }*/
 
     var ws_js_to_unreal = new WebSocket('ws://127.0.0.1:30020');
     ws_js_to_unreal.onopen = function () {
-        console.log(23233,"Connection Open");
+        console.log("unreal websocket connection Open");
     };
     ws_js_to_unreal.onerror = function (error) {
     };
     ws_js_to_unreal.onmessage = function (message) {
-       console.log(11111, message)
+        //console.log(message)
     };
     ws_js_to_unreal.onclose = function (event) {
         console.log("WebSocket is closed now.");
     };
 
     window.send_sensor_data = function (sensor, data) {
+        if (!!ws_js_to_unreal){
+            console.log('no connection to unreal websocket. Check it is switched on', sensor, data)
+            return;
+        }
         var info_str = JSON.stringify({id: id, sensor: sensor, data: data});
-        var data = {	"MessageName": "http",
-		"Parameters" :{
-			"Url": "/remote/object/call",
-			"Verb": "Put",
-        	"Body": {
-				"ObjectPath": "/Game/Levels/XV3DGS_SplatScene.XV3DGS_SplatScene:PersistentLevel.bikeshelter_actor_C_1.RootComponent",
-				"propertyName": "StreamingDistanceMultiplier",
-				 "functionName": "SetRelativeRotation",
-				"parameters": {"NewRotation": {
-						 "Pitch": data.x * 100,
-						"Yaw": data.y * 100,
-						"Roll": data.z * 100
-					    }
+
+        var sensor_info = undefined
+
+        if (sensor === 'ok') {
+            sensor_info = {
+                "objectPath": "/Game/Levels/TweeningScene.TweeningScene:PersistentLevel.TweenInterface_C_2",
+                "functionName": "xy_input",
+                "parameters": {
+                    "x": data.x,
+                    "y": data.y,
+                    "generateTransaction": true
                 }
-			    }
-             }
+            }
+        }
+        else if(sensor_info === 'count'){
+            sensor_info = {
+                "objectPath": "/Game/Levels/TweeningScene.TweeningScene:PersistentLevel.TweenInterface_C_2",
+                "functionName": "TweenTo",
+                "parameters": {
+                    "Index": data.index,
+                    "generateTransaction": true
+                }
+            }
         }
 
-        ws_js_to_unreal.send(JSON.stringify(data));
-        console.log(3232232, 'sent')
+        var payload = {
+            "MessageName": "http",
+            // "Parameters" :{
+            // 	"Url": "/remote/object/call",
+            // 	"Verb": "Put",
+            // 	"Body": {
+            // 		"ObjectPath": "/Game/Levels/XV3DGS_SplatScene.XV3DGS_SplatScene:PersistentLevel.bikeshelter_actor_C_1.RootComponent",
+            // 		"propertyName": "StreamingDistanceMultiplier",
+            // 		 "functionName": "SetRelativeRotation",
+            // 		"parameters": {"NewRotation": {
+            // 				 "Pitch": data.x * 100,
+            // 				"Yaw": data.y * 100,
+            // 				"Roll": data.z * 100
+            // 			    }
+            //         }
+            // 	    }
+            //      }
+            "Parameters": {
+                "Url": "/remote/object/call",
+                "Verb": "Put",
+                "Body": sensor_info
+            }
+        }
+        console.log(payload);
+        ws_js_to_unreal.send(JSON.stringify(payload));
 
     }
 
