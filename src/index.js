@@ -182,13 +182,10 @@ function webcam() {
                         gesture_action.ok(results.landmarks[i]);
                     }
                 } else {
-                    categoryName = gesture_action.count(results.landmarks[i]);
-
+                    const outcome = gesture_action.count(results.landmarks[i]);
+                    if(!!outcome) categoryName = outcome;
                 }
-
                 gestureOutput.innerText = `GestureRecognizer: ${categoryName}\n Confidence: ${categoryScore} %\n Handedness: ${handedness}`;
-
-
             }
         }
 
